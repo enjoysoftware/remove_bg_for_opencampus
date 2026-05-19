@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>写真送信フォーム - 顔写真送信</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            margin: 0;
+        }
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        p.description {
+            color: #aaaaaa;
+            margin-bottom: 2rem;
+        }
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            background-color: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            margin-bottom: 2rem;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button, label.file-upload-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-weight: bold;
+            display: inline-block;
+        }
+        button:hover, label.file-upload-btn:hover {
+            background-color: #45a049;
+        }
+        button:active, label.file-upload-btn:active {
+            transform: scale(0.98);
+        }
+        input[type="file"] {
+            display: none;
+        }
+        #status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+            max-width: 640px;
+        }
+        .success { background-color: rgba(76, 175, 80, 0.2); color: #4CAF50; border: 1px solid #4CAF50; }
+        .error { background-color: rgba(244, 67, 54, 0.2); color: #f44336; border: 1px solid #f44336; }
+        .loading { background-color: rgba(33, 150, 243, 0.2); color: #2196F3; border: 1px solid #2196F3; }
+    </style>
+</head>
+<body>
+
+    <h1>AI変身サイネージ</h1>
+    <p class="description">カメラで写真を撮るか、画像を選んでAIに送信しよう！</p>
+
+    <div class="camera-container">
+        <!-- Webカメラの映像を表示する要素 -->
+        <video id="video" autoplay playsinline muted></video>
+    </div>
+
+    <!-- 撮影用に隠しておくCanvas -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <div class="controls">
+        <button id="start-camera-btn">カメラを起動</button>
+        <button id="capture-btn" style="display:none;">写真を撮って送信</button>
+        
+        <!-- ファイルアップロード用 -->
+        <label class="file-upload-btn">
+            画像ファイルを選ぶ
+            <input type="file" id="file-input" accept="image/png, image/jpeg">
+        </label>
+    </div>
+
+    <div id="status" style="display: none;"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startCameraBtn = document.getElementById('start-camera-btn');
+        const captureBtn = document.getElementById('capture-btn');
+        const fileInput = document.getElementById('file-input');
+        const statusDiv = document.getElementById('status');
+
+        // ExpressサーバーなどのAPIエンドポイント（環境に合わせて変更してください）
+        const API_URL = 'http://localhost:3000/api/upload-face'; 
+
+        // 1. Webカメラを起動する関数
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 1280, height: 720, facingMode: "user" } 
+                });
+                video.srcObject = stream;
+                startCameraBtn.style.display = 'none';
+                captureBtn.style.display = 'inline-block';
+                showStatus('カメラが起動しました。カメラを見てボタンを押してください！', 'success');
+            } catch (err) {
+                console.error("カメラへのアクセスに失敗しました:", err);
+                showStatus('カメラの起動に失敗しました。権限を確認してください。', 'error');
+            }
+        }
+
+        // 2. カメラ映像からフレームを切り取って送信する関数
+        function captureAndSend() {
+            // Canvasのサイズをビデオのサイズに合わせる
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // ビデオの現在のフレームをCanvasに描画
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Canvasの画像をBlob（バイナリデータ）に変換
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], "captured_face.jpg", { type: "image/jpeg" });
+                    sendImageToServer(file);
+                }
+            }, 'image/jpeg', 0.9);
+        }
+
+        // 3. ファイル選択から送信する関数
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                sendImageToServer(file);
+            }
+        });
+
+        // 4. バックエンドサーバーへ画像を送信する関数 (Fetch API)
+        async function sendImageToServer(file) {
+            showStatus('AIへ画像を送信中...', 'loading');
+            
+            // FormDataを作成してファイルを添付
+            const formData = new FormData();
+            formData.append('face_image', file);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    showStatus('送信成功！配信画面を見てみよう！', 'success');
+                    // 必要に応じて、送信成功後にエフェクトを鳴らしたり画面を切り替えたりできます
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('送信エラー:', error);
+                showStatus('エラーが発生しました。サーバーが起動しているか確認してください。', 'error');
+            }
+        }
+
+        // ステータスメッセージを表示する補助関数
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+            statusDiv.style.display = 'block';
+            
+            // 5秒後にメッセージを消す
+            if(type !== 'loading') {
+                setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
+            }
+        }
+
+        // イベントリスナーの登録
+        startCameraBtn.addEventListener('click', startCamera);
+        captureBtn.addEventListener('click', captureAndSend);
+    </script>
+</body>
+</html>
