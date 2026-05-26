@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>写真送信フォーム - 顔写真送信</title>
+    <title>AI変身サイネージ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4CAF50;
-            --bg-color: #1a1a1a;
+            --primary-color: #ffffff;
+            --bg-color: #000000;
             --text-color: #ffffff;
+            --accent-color: #333333;
+            --border-color: #444444;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: "Sawarabi Mincho", "Noto Serif JP", serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
@@ -19,24 +23,45 @@
             align-items: center;
             padding: 2rem;
             margin: 0;
+            letter-spacing: 0.1em;
         }
         h1 {
-            color: var(--primary-color);
+            color: var(--text-color);
             margin-bottom: 0.5rem;
-        }
-        p.description {
-            color: #aaaaaa;
-            margin-bottom: 2rem;
+            font-weight: 400;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            font-size: 2rem;
         }
         .camera-container {
             position: relative;
             width: 100%;
-            max-width: 640px;
+            max-width: 800px;
             background-color: #000;
-            border-radius: 12px;
+            border: 1px solid var(--border-color);
             overflow: hidden;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
+        }
+        #shutter-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .flash-active {
+            animation: shutter-anim 0.4s ease-out;
+        }
+        @keyframes shutter-anim {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
         }
         video {
             width: 100%;
@@ -45,83 +70,147 @@
         }
         .controls {
             display: flex;
-            gap: 1rem;
+            gap: 1.5rem;
             flex-wrap: wrap;
             justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
         }
-        button, label.file-upload-btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1.1rem;
-            border-radius: 8px;
+        button, label.file-upload-btn, .action-btn {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--text-color);
+            width: 100px;
+            height: 100px;
+            font-size: 1.8rem;
+            border-radius: 0;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            font-weight: bold;
-            display: inline-block;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
         }
-        button:hover, label.file-upload-btn:hover {
-            background-color: #45a049;
+        button:hover, label.file-upload-btn:hover, .action-btn:hover {
+            background-color: var(--text-color);
+            color: var(--bg-color);
         }
-        button:active, label.file-upload-btn:active {
-            transform: scale(0.98);
+        button:active, label.file-upload-btn:active, .action-btn:active {
+            opacity: 0.7;
+        }
+        #upload-btn {
+            border: 4px double var(--text-color);
         }
         input[type="file"] {
             display: none;
         }
         #status {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            border-radius: 8px;
-            font-weight: bold;
+            margin-top: 2rem;
+            padding: 1.2rem;
+            border: 1px solid var(--border-color);
+            font-size: 0.85rem;
             text-align: center;
             width: 100%;
-            max-width: 640px;
+            max-width: 800px;
+            background-color: rgba(255, 255, 255, 0.03);
+            letter-spacing: 0.05em;
         }
-        .success { background-color: rgba(76, 175, 80, 0.2); color: #4CAF50; border: 1px solid #4CAF50; }
-        .error { background-color: rgba(244, 67, 54, 0.2); color: #f44336; border: 1px solid #f44336; }
-        .loading { background-color: rgba(33, 150, 243, 0.2); color: #2196F3; border: 1px solid #2196F3; }
+        .success { color: #ffffff; }
+        .error { color: #888888; border-color: #888888; }
+        .loading { color: #ffffff; animation: blink 2s infinite; }
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        #result-container {
+            margin-top: 3rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 3rem;
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        #result-image {
+            max-width: 100%;
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+        h3 {
+            font-weight: 400;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            color: #888888;
+        }
     </style>
 </head>
 <body>
 
-    <h1>AI変身サイネージ</h1>
-    <p class="description">カメラで写真を撮るか、画像を選んでAIに送信しよう！</p>
+    <h1>A I   T R A N S F O R M</h1>
 
     <div class="camera-container">
-        <!-- Webカメラの映像を表示する要素 -->
         <video id="video" autoplay playsinline muted></video>
+        <div id="shutter-flash"></div>
     </div>
 
-    <!-- 撮影用に隠しておくCanvas -->
     <canvas id="canvas" style="display:none;"></canvas>
 
     <div class="controls">
-        <button id="start-camera-btn">カメラを起動</button>
-        <button id="capture-btn" style="display:none;">写真を撮って送信</button>
+        <button id="start-camera-btn" title="Start Camera">
+            <i class="fas fa-camera"></i>
+        </button>
         
-        <!-- ファイルアップロード用 -->
-        <label class="file-upload-btn">
-            画像ファイルを選ぶ
+        <button id="capture-btn" style="display:none;" title="Capture">
+            <i class="fas fa-camera"></i>
+        </button>
+        
+        <label class="file-upload-btn" title="Select File">
+            <i class="fas fa-folder-open"></i>
             <input type="file" id="file-input" accept="image/png, image/jpeg">
         </label>
+        
+        <button id="white-bg-btn" style="display: none;" title="Remove Background">
+            <i class="fas fa-eraser"></i>
+        </button>
+        
+        <button id="upload-btn" style="display: none;" title="Send to AI">
+            <i class="fas fa-upload"></i>
+        </button>
     </div>
 
     <div id="status" style="display: none;"></div>
+
+    <div id="result-container" style="display: none;">
+        <h3 id="result-title">PREVIEW</h3>
+        <img id="result-image">
+        <br>
+        <a id="download-link" class="action-btn" style="text-decoration: none; display: none; margin-top: 1rem;" title="Save Image">
+            <i class="fas fa-save"></i>
+        </a>
+    </div>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const startCameraBtn = document.getElementById('start-camera-btn');
         const captureBtn = document.getElementById('capture-btn');
+        const whiteBgBtn = document.getElementById('white-bg-btn');
+        const uploadBtn = document.getElementById('upload-btn');
         const fileInput = document.getElementById('file-input');
         const statusDiv = document.getElementById('status');
+        const resultContainer = document.getElementById('result-container');
+        const resultImage = document.getElementById('result-image');
+        const resultTitle = document.getElementById('result-title');
+        const downloadLink = document.getElementById('download-link');
 
-        // ExpressサーバーなどのAPIエンドポイント（環境に合わせて変更してください）
-        const API_URL = 'http://localhost:3000/api/upload-face'; 
+        const UPLOAD_API_URL = 'http://localhost:3000/api/upload-face'; 
+        const WHITE_BG_API_URL = 'http://localhost:3000/api/white-bg';
 
-        // 1. Webカメラを起動する関数
+        let currentFile = null;
+
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -130,81 +219,123 @@
                 video.srcObject = stream;
                 startCameraBtn.style.display = 'none';
                 captureBtn.style.display = 'inline-block';
-                showStatus('カメラが起動しました。カメラを見てボタンを押してください！', 'success');
+                showStatus('カメラが起動しました。', 'success');
             } catch (err) {
                 console.error("カメラへのアクセスに失敗しました:", err);
-                showStatus('カメラの起動に失敗しました。権限を確認してください。', 'error');
+                showStatus('カメラの起動に失敗しました。', 'error');
             }
         }
 
-        // 2. カメラ映像からフレームを切り取って送信する関数
-        function captureAndSend() {
-            // Canvasのサイズをビデオのサイズに合わせる
+        function capturePhoto() {
+            // シャッターフラッシュ効果
+            const flash = document.getElementById('shutter-flash');
+            flash.classList.remove('flash-active');
+            void flash.offsetWidth; // 強制リフロー
+            flash.classList.add('flash-active');
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
-            // ビデオの現在のフレームをCanvasに描画
             const context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Canvasの画像をBlob（バイナリデータ）に変換
             canvas.toBlob((blob) => {
                 if (blob) {
-                    const file = new File([blob], "captured_face.jpg", { type: "image/jpeg" });
-                    sendImageToServer(file);
+                    currentFile = new File([blob], "captured_face.jpg", { type: "image/jpeg" });
+                    updatePreview(currentFile, "撮影した写真");
+                    showStatus('写真を撮影しました。', 'success');
                 }
             }, 'image/jpeg', 0.9);
         }
 
-        // 3. ファイル選択から送信する関数
+        function updatePreview(file, title) {
+            const url = URL.createObjectURL(file);
+            resultImage.src = url;
+            resultTitle.textContent = title + ":";
+            resultContainer.style.display = 'block';
+            whiteBgBtn.style.display = 'inline-block';
+            uploadBtn.style.display = 'inline-block';
+            
+            downloadLink.href = url;
+            downloadLink.download = file.name || 'image.jpg';
+        }
+
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
-                sendImageToServer(file);
+                currentFile = file;
+                updatePreview(file, "選択した画像");
             }
         });
 
-        // 4. バックエンドサーバーへ画像を送信する関数 (Fetch API)
-        async function sendImageToServer(file) {
-            showStatus('AIへ画像を送信中...', 'loading');
+        whiteBgBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
             
-            // FormDataを作成してファイルを添付
+            showStatus('背景を除去中...', 'loading');
+            
             const formData = new FormData();
-            formData.append('face_image', file);
+            formData.append('file', currentFile);
 
             try {
-                const response = await fetch(API_URL, {
+                const response = await fetch(WHITE_BG_API_URL, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    currentFile = new File([blob], "processed_image.jpg", { type: "image/jpeg" });
+                    updatePreview(currentFile, "背景除去後の画像");
+                    downloadLink.style.display = 'inline-block';
+                    showStatus('背景の除去が完了しました。', 'success');
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('処理エラー:', error);
+                showStatus('背景除去中にエラーが発生しました。', 'error');
+            }
+        });
+
+        uploadBtn.addEventListener('click', async () => {
+            if (!currentFile) {
+                showStatus('送信する画像がありません。', 'error');
+                return;
+            }
+            
+            showStatus('AIへ送信中...', 'loading');
+            
+            const formData = new FormData();
+            formData.append('face_image', currentFile);
+
+            try {
+                const response = await fetch(UPLOAD_API_URL, {
                     method: 'POST',
                     body: formData,
                 });
 
                 if (response.ok) {
                     showStatus('送信成功！配信画面を見てみよう！', 'success');
-                    // 必要に応じて、送信成功後にエフェクトを鳴らしたり画面を切り替えたりできます
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
             } catch (error) {
                 console.error('送信エラー:', error);
-                showStatus('エラーが発生しました。サーバーが起動しているか確認してください。', 'error');
+                showStatus('送信エラーが発生しました。', 'error');
             }
-        }
+        });
 
-        // ステータスメッセージを表示する補助関数
         function showStatus(message, type) {
             statusDiv.textContent = message;
             statusDiv.className = type;
             statusDiv.style.display = 'block';
             
-            // 5秒後にメッセージを消す
             if(type !== 'loading') {
                 setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
             }
         }
 
-        // イベントリスナーの登録
         startCameraBtn.addEventListener('click', startCamera);
-        captureBtn.addEventListener('click', captureAndSend);
+        captureBtn.addEventListener('click', capturePhoto);
     </script>
 </body>
 </html>
