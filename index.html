@@ -206,8 +206,17 @@
         const resultTitle = document.getElementById('result-title');
         const downloadLink = document.getElementById('download-link');
 
-        const UPLOAD_API_URL = 'http://localhost:3000/api/upload-face'; 
-        const WHITE_BG_API_URL = 'http://localhost:3000/api/white-bg';
+        // APIサーバーのポートを明示的に指定する場合
+        // 例：HTMLは8000、APIサーバーは3000で動いている
+        const API_PORT = 3000; // ここにAPIサーバーのポート番号を入力
+        const currentProtocol = window.location.protocol;
+        const currentHostname = window.location.hostname; // ホスト名のみ取得（ポートを除外）
+
+        // APIサーバーのアドレスを再構築
+        const apiBaseUrl = `${currentProtocol}//${currentHostname}:${API_PORT}`;
+
+        const UPLOAD_API_URL = `${apiBaseUrl}/api/upload-face`; 
+        const WHITE_BG_API_URL = `${apiBaseUrl}/api/white-bg`;
 
         let currentFile = null;
 
