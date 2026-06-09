@@ -208,9 +208,9 @@
 
         // APIサーバーのポートを明示的に指定する場合
         // 例：HTMLは8000、APIサーバーは3000で動いている
-        const API_PORT = 3000; // ここにAPIサーバーのポート番号を入力
+        const API_PORT = 443; // ここにAPIサーバーのポート番号を入力
         const currentProtocol = window.location.protocol;
-        const currentHostname = window.location.hostname; // ホスト名のみ取得（ポートを除外）
+        const currentHostname = "optimize-frozen-creativity-hide.trycloudflare.com"; // ホスト名（ポート番号は無し）
 
         // APIサーバーのアドレスを再構築
         const apiBaseUrl = `${currentProtocol}//${currentHostname}:${API_PORT}`;
