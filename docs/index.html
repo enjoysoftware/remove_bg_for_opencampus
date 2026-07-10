@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI変身サイネージ</title>
+    <title>AI 変身サイネージ</title>
     <link href="https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -145,6 +145,121 @@
             margin-bottom: 2rem;
             color: #888888;
         }
+
+        /* --- モーダルスタイル --- */
+        #privacy-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 1000px;
+            height: 85vh;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #modal-iframe {
+            flex-grow: 1;
+            width: 100%;
+            border: none;
+            background-color: var(--bg-color);
+        }
+
+        #modal-footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            min-height: 100px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        #agreement-buttons {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .agree-btn, .disagree-btn {
+            flex: 1;
+            width: auto;
+            min-width: 180px;
+            height: 60px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 0.15em;
+        }
+
+        .agree-btn {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            border-color: var(--text-color);
+        }
+
+        .agree-btn:hover {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .disagree-btn {
+            background-color: transparent;
+            color: #888888;
+            border-color: #888888;
+        }
+
+        .disagree-btn:hover {
+            background-color: #888888;
+            color: var(--bg-color);
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            #modal-content {
+                width: 95%;
+                height: 90vh;
+                top: 50%;
+            }
+            
+            #modal-footer {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+            
+            #agreement-buttons {
+                flex-direction: column;
+                width: 100%;
+                gap: 1rem;
+            }
+            
+            .agree-btn, .disagree-btn {
+                width: 100%;
+                min-width: unset;
+            }
+        }
     </style>
 </head>
 <body>
@@ -192,6 +307,23 @@
         </a>
     </div>
 
+    <!-- プライバシーポリシーモーダル（閉じるボタンなし） -->
+    <div id="privacy-modal">
+        <div id="modal-content">
+            <iframe id="modal-iframe" src="./terms_of_service.html" loading="lazy"></iframe>
+            <div id="modal-footer">
+                <div id="agreement-buttons">
+                    <button id="disagree-btn" class="disagree-btn" title="利用規約に同意しない">
+                        <i class="fas fa-times-circle"></i>&nbsp;同意しない
+                    </button>
+                    <button id="agree-btn" class="agree-btn" title="利用規約に同意する">
+                        同意する&nbsp;<i class="fas fa-check-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -199,6 +331,10 @@
         const captureBtn = document.getElementById('capture-btn');
         const whiteBgBtn = document.getElementById('white-bg-btn');
         const uploadBtn = document.getElementById('upload-btn');
+
+        const privacyModal = document.getElementById('privacy-modal');
+        const agreeBtn = document.getElementById('agree-btn');
+        const disagreeBtn = document.getElementById('disagree-btn');
         const fileInput = document.getElementById('file-input');
         const statusDiv = document.getElementById('status');
         const resultContainer = document.getElementById('result-container');
@@ -206,21 +342,26 @@
         const resultTitle = document.getElementById('result-title');
         const downloadLink = document.getElementById('download-link');
 
-        // APIサーバーのポートを明示的に指定する場合
-        // 例：HTMLは8000、APIサーバーは3000で動いている
-        const API_PORT = 443; // ここにAPIサーバーのポート番号を入力
+        // API サーバー設定
+        const API_PORT = 443;
         const currentProtocol = window.location.protocol;
-        const currentHostname = "huntington-salem-relate-reductions.trycloudflare.com"; // ホスト名（ポート番号は無し）
+        // APIサーバーのアドレスを構築
 
-        // APIサーバーのアドレスを再構築
+        const currentHostname = "optimize-frozen-creativity-hide.trycloudflare.com";
+
         const apiBaseUrl = `${currentProtocol}//${currentHostname}:${API_PORT}`;
 
         const UPLOAD_API_URL = `${apiBaseUrl}/api/upload-face`; 
         const WHITE_BG_API_URL = `${apiBaseUrl}/api/white-bg`;
 
         let currentFile = null;
+        let hasAgreed = false;
 
         async function startCamera() {
+            if (!hasAgreed) {
+                showStatus('まず利用規約に同意してください', 'error');
+                return;
+            }
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { width: 1280, height: 720, facingMode: "user" } 
@@ -236,10 +377,13 @@
         }
 
         function capturePhoto() {
-            // シャッターフラッシュ効果
+            if (!hasAgreed) {
+                showStatus('まず利用規約に同意してください', 'error');
+                return;
+            }
             const flash = document.getElementById('shutter-flash');
             flash.classList.remove('flash-active');
-            void flash.offsetWidth; // 強制リフロー
+            void flash.offsetWidth;
             flash.classList.add('flash-active');
 
             canvas.width = video.videoWidth;
@@ -257,6 +401,10 @@
         }
 
         function updatePreview(file, title) {
+            if (!hasAgreed) {
+                showStatus('まず利用規約に同意してください', 'error');
+                return;
+            }
             const url = URL.createObjectURL(file);
             resultImage.src = url;
             resultTitle.textContent = title + ":";
@@ -271,12 +419,20 @@
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
+                if (!hasAgreed) {
+                    showStatus('まず利用規約に同意してください', 'error');
+                    return;
+                }
                 currentFile = file;
                 updatePreview(file, "選択した画像");
             }
         });
 
         whiteBgBtn.addEventListener('click', async () => {
+            if (!hasAgreed) {
+                showStatus('まず利用規約に同意してください', 'error');
+                return;
+            }
             if (!currentFile) return;
             
             showStatus('背景を除去中...', 'loading');
@@ -306,12 +462,16 @@
         });
 
         uploadBtn.addEventListener('click', async () => {
+            if (!hasAgreed) {
+                showStatus('まず利用規約に同意してください', 'error');
+                return;
+            }
             if (!currentFile) {
                 showStatus('送信する画像がありません。', 'error');
                 return;
             }
             
-            showStatus('AIへ送信中...', 'loading');
+            showStatus('AI へ送信中...', 'loading');
             
             const formData = new FormData();
             formData.append('face_image', currentFile);
@@ -333,6 +493,59 @@
             }
         });
 
+        // モーダル制御関数
+        function openPrivacyModal() {
+            privacyModal.style.display = 'flex';
+            document.addEventListener('keydown', handleEscKey);
+        }
+
+        function closePrivacyModal() {
+            privacyModal.style.display = 'none';
+            document.removeEventListener('keydown', handleEscKey);
+        }
+
+        function handleEscKey(event) {
+            if (event.key === 'Escape' && !hasAgreed) {
+                // ESC キーで閉じないようにしている
+                event.preventDefault();
+            }
+        }
+
+        function consentGiven() {
+            hasAgreed = true;
+            localStorage.setItem('terms_agreed', 'true');
+            localStorage.setItem('agreed_at', new Date().toISOString());
+            closePrivacyModal();
+            showStatus('利用規約に同意されました。サービスをご利用ください。', 'success');
+        }
+
+        function consentDenied() {
+            localStorage.removeItem('terms_agreed');
+            localStorage.removeItem('agreed_at');
+            closePrivacyModal();
+            preventExit();
+        }
+
+        function preventExit() {
+            showStatus('本サービスの利用には契約内容への同意が必要です', 'error');
+            startCameraBtn.disabled = true;
+            captureBtn.disabled = true;
+            fileInput.disabled = true;
+            whiteBgBtn.disabled = true;
+            uploadBtn.disabled = true;
+
+            
+            setTimeout(() => {
+                openPrivacyModal();
+                showStatus('再度、利用規約の確認をお願いいたします', 'loading');
+            }, 5000);
+        }
+
+        // イベントリスナー登録
+
+        agreeBtn.addEventListener('click', consentGiven);
+        disagreeBtn.addEventListener('click', consentDenied);
+
         function showStatus(message, type) {
             statusDiv.textContent = message;
             statusDiv.className = type;
@@ -345,6 +558,17 @@
 
         startCameraBtn.addEventListener('click', startCamera);
         captureBtn.addEventListener('click', capturePhoto);
+
+        // ページ読み込み時、初めての場合のみモーダルを開く
+        window.addEventListener('load', () => {
+            const agreed = localStorage.getItem('terms_agreed');
+            if (agreed !== 'true') {
+                setTimeout(() => {
+                    openPrivacyModal();
+                    showStatus('利用規約にご同意いただいた後、サービスをご利用ください', 'loading');
+                }, 500);
+            }
+        });
     </script>
 </body>
 </html>
