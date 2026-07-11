@@ -313,10 +313,10 @@
             <iframe id="modal-iframe" src="./terms_of_service.html" loading="lazy"></iframe>
             <div id="modal-footer">
                 <div id="agreement-buttons">
-                    <button id="disagree-btn" class="disagree-btn" title="利用規約に同意しない">
+                    <button id="disagree-btn" class="disagree-btn" title="プライバシーポリシーに同意しない">
                         <i class="fas fa-times-circle"></i>&nbsp;同意しない
                     </button>
-                    <button id="agree-btn" class="agree-btn" title="利用規約に同意する">
+                    <button id="agree-btn" class="agree-btn" title="プライバシーポリシーに同意する">
                         同意する&nbsp;<i class="fas fa-check-circle"></i>
                     </button>
                 </div>
@@ -356,7 +356,7 @@
 
         async function startCamera() {
             if (!hasAgreed) {
-                showStatus('まず利用規約に同意してください', 'error');
+                showStatus('まずプライバシーポリシーに同意してください', 'error');
                 return;
             }
             try {
@@ -375,7 +375,7 @@
 
         function capturePhoto() {
             if (!hasAgreed) {
-                showStatus('まず利用規約に同意してください', 'error');
+                showStatus('まずプライバシーポリシーに同意してください', 'error');
                 return;
             }
             const flash = document.getElementById('shutter-flash');
@@ -399,7 +399,7 @@
 
         function updatePreview(file, title) {
             if (!hasAgreed) {
-                showStatus('まず利用規約に同意してください', 'error');
+                showStatus('まずプライバシーポリシーに同意してください', 'error');
                 return;
             }
             const url = URL.createObjectURL(file);
@@ -417,7 +417,7 @@
             const file = event.target.files[0];
             if (file) {
                 if (!hasAgreed) {
-                    showStatus('まず利用規約に同意してください', 'error');
+                    showStatus('まずプライバシーポリシーに同意してください', 'error');
                     return;
                 }
                 currentFile = file;
@@ -427,7 +427,7 @@
 
         whiteBgBtn.addEventListener('click', async () => {
             if (!hasAgreed) {
-                showStatus('まず利用規約に同意してください', 'error');
+                showStatus('まずプライバシーポリシーに同意してください', 'error');
                 return;
             }
             if (!currentFile) return;
@@ -460,7 +460,7 @@
 
         uploadBtn.addEventListener('click', async () => {
             if (!hasAgreed) {
-                showStatus('まず利用規約に同意してください', 'error');
+                showStatus('まずプライバシーポリシーに同意してください', 'error');
                 return;
             }
             if (!currentFile) {
@@ -513,7 +513,7 @@
             localStorage.setItem('terms_agreed', 'true');
             localStorage.setItem('agreed_at', new Date().toISOString());
             closePrivacyModal();
-            showStatus('利用規約に同意されました。サービスをご利用ください。', 'success');
+            showStatus('プライバシーポリシーに同意されました。サービスをご利用ください。', 'success');
         }
 
         function consentDenied() {
@@ -524,7 +524,7 @@
         }
 
         function preventExit() {
-            showStatus('本サービスの利用には契約内容への同意が必要です', 'error');
+            showStatus('本サービスの利用にはプライバシーポリシーへの同意が必要です', 'error');
             startCameraBtn.disabled = true;
             captureBtn.disabled = true;
             fileInput.disabled = true;
@@ -534,7 +534,7 @@
             
             setTimeout(() => {
                 openPrivacyModal();
-                showStatus('再度、利用規約の確認をお願いいたします', 'loading');
+                showStatus('再度、プライバシーポリシーの確認をお願いいたします', 'loading');
             }, 5000);
         }
 
@@ -562,7 +562,7 @@
             if (agreed !== 'true') {
                 setTimeout(() => {
                     openPrivacyModal();
-                    showStatus('利用規約にご同意いただいた後、サービスをご利用ください', 'loading');
+                    showStatus('プライバシーポリシーにご同意いただいた後、サービスをご利用ください', 'loading');
                 }, 500);
             }
         });
